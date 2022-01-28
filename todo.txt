@@ -1,0 +1,5 @@
+- makefile;
+- tokenization of "special" numbers (such as hexadecimal, binary and others);
+- implement string escape;
+- tokenize reserved keywords;
+- program error mananagement;
