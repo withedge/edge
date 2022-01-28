@@ -433,7 +433,6 @@ edge_token_t *edge_lexer_go_next(edge_lexer_t* lexer) {
         }
     }
 
-    printf("%d | %s\n", result->type, result->literal);
     return result;
 }
 

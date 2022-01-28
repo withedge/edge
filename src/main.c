@@ -6,20 +6,16 @@
 #include "edge/token.h"
 
 int main() {
-    edge_lexer_t *lexer = edge_lexer_new("+-*/%");
-
+    edge_lexer_t *lexer = edge_lexer_new("++-*=!=/%=");
     edge_token_t *current = edge_lexer_go_next(lexer);
-
     while(1) {
+        printf("%d | %s\n", current->type, current->literal);
         if(current->type == _eof) {
             break;
         }
         current = edge_lexer_go_next(lexer);
     }
-
     edge_free(current);
-
     edge_lexer_destroy(lexer);
-
     return 0;
 }

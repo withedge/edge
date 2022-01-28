@@ -2,33 +2,30 @@
 
 #include "edge/memory.h"
 
-void *edge_malloc(size_t a_size) {
-    void *v_result = malloc(a_size);
-    if(v_result == NULL) {
+void *edge_malloc(size_t size) {
+    void *result = malloc(size);
+    if(result == NULL) {
         abort();
     }
-
-    return v_result;
+    return result;
 }
 
-void *edge_alloc(unsigned int a_n, size_t a_size) {
-    void *v_result = calloc(a_n, a_size);
-    if(v_result == NULL) {
+void *edge_alloc(unsigned int n, size_t size) {
+    void *result = calloc(n, size);
+    if(result == NULL) {
         abort();
     }
-
-    return v_result;
+    return result;
 }
 
-void *edge_realloc(void *a_ptr, unsigned int a_n, size_t a_size) {
-    void *v_result = realloc(a_ptr, a_n * a_size);
-    if(v_result == NULL) {
+void *edge_realloc(void *ptr, unsigned int n, size_t size) {
+    void *result = realloc(ptr, n * size);
+    if(result == NULL) {
         abort();
     }
-
-    return v_result;
+    return result;
 }
 
-void edge_free(void *a_ptr) {
-    free(a_ptr);
+void edge_free(void *ptr) {
+    free(ptr);
 }

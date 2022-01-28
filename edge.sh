@@ -6,7 +6,7 @@ INCLUDE="include"
 
 RM="rm -rf"
 
-H="src/util.c src/lexer.c src/memory.c src/token.c"
+H="src/util.c src/lexer.c src/memory.c"
 
 mkdir -p out
 $CC $FLAGS -I$INCLUDE $H src/main.c -o out/main.o

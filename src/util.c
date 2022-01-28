@@ -7,8 +7,8 @@
 
 #include "edge/util.h"
 
-const char *edge_util_sub(const char *a_1, size_t a_2, size_t a_3) {
-    char *v_r = (char *) edge_alloc(a_2 + a_3, sizeof(char));
-    strncpy(v_r, &a_1[a_2 - 1], a_3 + 1);
-    return v_r;
+const char *edge_util_sub(const char *source, size_t begin, size_t n) {
+    char *result = (char *) edge_alloc(begin + n, sizeof(char));
+    strncpy(result, &source[begin - 1], n + 1);
+    return result;
 }
