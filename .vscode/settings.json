@@ -1,5 +1,12 @@
 {
     "files.associations": {
-        "functional": "c"
+        "functional": "c",
+        "array": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "vector": "cpp"
     }
 }

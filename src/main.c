@@ -6,16 +6,15 @@
 #include "edge/token.h"
 
 int main() {
-    edge_lexer_t *lexer = edge_lexer_new("++-*=!=/%=");
-    edge_token_t *current = edge_lexer_go_next(lexer);
-    while(1) {
-        printf("%d | %s\n", current->type, current->literal);
-        if(current->type == _eof) {
-            break;
-        }
-        current = edge_lexer_go_next(lexer);
+    size_t position = 0;
+
+    edge_lexer_t *lexer = edge_lexer_new("'Hello World!'");
+    edge_lexer_tokenize(lexer);
+    
+    for(; position < lexer->tokens->offset; position++) {
+        printf("%d | %s\n", edge_list_token_get(lexer->tokens, position)->type, edge_list_token_get(lexer->tokens, position)->literal);
     }
-    edge_free(current);
+
     edge_lexer_destroy(lexer);
     return 0;
 }

@@ -15,11 +15,13 @@ edge_lexer_t *edge_lexer_new(const char *source) {
     result->source = source;
     result->offset = (size_t) 0;
 
+    result->tokens = edge_list_token_new();
+
     return result;
 }
 
 bool edge_lexer_is_whitespace(char _) {
-    return ((_ == ' ') || (_ == '\r') || (_ == '\t') || (_ == '\n'));
+    return ((_ == ' ') || (_ == '\r'));
 }
 
 bool edge_lexer_is_number(char _, bool accept) {
@@ -30,15 +32,15 @@ bool edge_lexer_is_identifier(char _, bool accept) {
     return (((_ >= 97) && (_ <= 122)) || ((_ >= 65) && (_ <= 90)) || _ == '_' || (accept && (edge_lexer_is_number(_, false))));
 }
 
-char edge_lexer_peek_current(edge_lexer_t* lexer) {
+char edge_lexer_peek_current(edge_lexer_t *lexer) {
     return (lexer->offset >= strlen(lexer->source)) ? '\0' : lexer->source[lexer->offset];
 }
 
-char edge_lexer_peek_next(edge_lexer_t* lexer) {
+char edge_lexer_peek_next(edge_lexer_t *lexer) {
     return ((lexer->offset + 1) >= strlen(lexer->source)) ? '\0' : lexer->source[lexer->offset + 1];
 }
 
-edge_token_t *edge_lexer_tokenize_operator(edge_lexer_t* lexer) {
+edge_token_t *edge_lexer_tokenize_operator(edge_lexer_t *lexer) {
     edge_token_t *result = edge_malloc(sizeof(edge_token_t));
     char current = edge_lexer_peek_current(lexer);
     size_t begin = lexer->offset;
@@ -49,11 +51,13 @@ edge_token_t *edge_lexer_tokenize_operator(edge_lexer_t* lexer) {
             lexer->offset++;
             result->type = _increment;
             result->literal = "++";
-        } else if(edge_lexer_peek_current(lexer) == '=') {
+        }
+        else if(edge_lexer_peek_current(lexer) == '=') {
             lexer->offset++;
             result->type = _add_assign;
             result->literal = "+=";
-        } else {
+        }
+        else {
             result->type = _add;
             result->literal = "+";
         }
@@ -63,7 +67,8 @@ edge_token_t *edge_lexer_tokenize_operator(edge_lexer_t* lexer) {
             lexer->offset++;
             result->type = _decrement;
             result->literal = "--";
-        } else if(edge_lexer_peek_current(lexer) == '=') {
+        }
+        else if(edge_lexer_peek_current(lexer) == '=') {
             lexer->offset++;
             result->type = _sub_assign;
             result->literal = "-=";
@@ -78,7 +83,8 @@ edge_token_t *edge_lexer_tokenize_operator(edge_lexer_t* lexer) {
             lexer->offset++;
             result->type = _mult_assign;
             result->literal = "*=";
-        } else {
+        }
+        else {
             result->type = _mult;
             result->literal = "*";
         }
@@ -88,7 +94,8 @@ edge_token_t *edge_lexer_tokenize_operator(edge_lexer_t* lexer) {
             lexer->offset++;
             result->type = _div_assign;
             result->literal = "/=";
-        } else {
+        }
+        else {
             result->type = _div;
             result->literal = "/";
         }
@@ -98,7 +105,8 @@ edge_token_t *edge_lexer_tokenize_operator(edge_lexer_t* lexer) {
             lexer->offset++;
             result->type = _mod_assign;
             result->literal = "%=";
-        } else {
+        }
+        else {
             result->type = _mod;
             result->literal = "%";
         }
@@ -108,7 +116,8 @@ edge_token_t *edge_lexer_tokenize_operator(edge_lexer_t* lexer) {
             lexer->offset++;
             result->type = _equal;
             result->literal = "==";
-        } else {
+        }
+        else {
             result->type = _assign;
             result->literal = "=";
         }
@@ -118,7 +127,8 @@ edge_token_t *edge_lexer_tokenize_operator(edge_lexer_t* lexer) {
             lexer->offset++;
             result->type = _bang_equal;
             result->literal = "!=";
-        } else {
+        }
+        else {
             result->type = _bang;
             result->literal = "!";
         }
@@ -128,7 +138,8 @@ edge_token_t *edge_lexer_tokenize_operator(edge_lexer_t* lexer) {
             lexer->offset++;
             result->type = _greater_equal;
             result->literal = ">=";
-        } else {
+        }
+        else {
             result->type = _greater;
             result->literal = ">";
         }
@@ -138,7 +149,8 @@ edge_token_t *edge_lexer_tokenize_operator(edge_lexer_t* lexer) {
             lexer->offset++;
             result->type = _less_equal;
             result->literal = "<=";
-        } else {
+        }
+        else {
             result->type = _less;
             result->literal = "<";
         }
@@ -151,7 +163,7 @@ edge_token_t *edge_lexer_tokenize_operator(edge_lexer_t* lexer) {
     return result;
 }
 
-edge_token_t *edge_lexer_tokenize_string(edge_lexer_t* lexer) {
+edge_token_t *edge_lexer_tokenize_string(edge_lexer_t *lexer) {
     edge_token_t *result = edge_malloc(sizeof(edge_token_t));
     size_t begin = lexer->offset;
 
@@ -163,7 +175,27 @@ edge_token_t *edge_lexer_tokenize_string(edge_lexer_t* lexer) {
     }
     lexer->offset++;
 
-    while(edge_lexer_peek_current(lexer) != symbol && edge_lexer_peek_current(lexer) != '\n' && edge_lexer_peek_current(lexer) != '\0') {
+    while(edge_lexer_peek_current(lexer) != '\n' && edge_lexer_peek_current(lexer) != '\0') {
+        if(edge_lexer_peek_current(lexer) == '\\') {
+            lexer->offset++;
+            if(edge_lexer_peek_current(lexer) != '\'' && edge_lexer_peek_current(lexer) != '"' && edge_lexer_peek_current(lexer) != '\\' && edge_lexer_peek_current(lexer) != 'n' && edge_lexer_peek_current(lexer) != 't' && edge_lexer_peek_current(lexer) != 'r' && edge_lexer_peek_current(lexer) != '0') {
+                printf("Invalid escape sequence in string position\n");
+            }
+            else {
+                if(edge_lexer_peek_current(lexer) == symbol) {
+                    lexer->offset++;
+                    if(!(edge_lexer_peek_current(lexer) == symbol) && edge_lexer_peek_next(lexer) != symbol) {
+                        /* printf("Invalid escape sequence in string position: unfinished string literal\n"); */
+                    }
+                }
+                else {
+                    lexer->offset++;
+                }
+            }
+        }
+        if(edge_lexer_peek_current(lexer) == symbol) {
+            break;
+        }
         lexer->offset++;
     }
 
@@ -172,12 +204,12 @@ edge_token_t *edge_lexer_tokenize_string(edge_lexer_t* lexer) {
     }
     lexer->offset++;
 
-    result->literal = edge_util_sub(lexer->source, begin + 1, lexer->offset - begin);
+    result->literal = edge_util_sub(lexer->source, begin + 1, lexer->offset - begin - 1);
 
     return result;
 }
 
-edge_token_t *edge_lexer_tokenize_number(edge_lexer_t* lexer) {
+edge_token_t *edge_lexer_tokenize_number(edge_lexer_t *lexer) {
     edge_token_t *result = edge_malloc(sizeof(edge_token_t));
     size_t begin = lexer->offset;
 
@@ -197,8 +229,9 @@ edge_token_t *edge_lexer_tokenize_number(edge_lexer_t* lexer) {
             if(edge_lexer_peek_current(lexer) == '.') {
                 if(result->type == _integer) {
                     result->type = _float;
-                } else {
-                    printf("Invalid decimal/float literal\n");
+                }
+                else {
+                    printf("Invalid float literal\n");
                 }
             }
         }
@@ -210,7 +243,7 @@ edge_token_t *edge_lexer_tokenize_number(edge_lexer_t* lexer) {
     return result;
 }
 
-edge_token_t *edge_lexer_tokenize_identifier(edge_lexer_t* lexer) {
+edge_token_t *edge_lexer_tokenize_identifier(edge_lexer_t *lexer) {
     edge_token_t *result = edge_malloc(sizeof(edge_token_t));
     size_t begin = lexer->offset;
 
@@ -220,17 +253,74 @@ edge_token_t *edge_lexer_tokenize_identifier(edge_lexer_t* lexer) {
         printf("Invalid identifier literal\n");
     }
 
-    lexer->offset++;
     while(edge_lexer_is_identifier(edge_lexer_peek_current(lexer), true)) {
         lexer->offset++;
     }
 
-    result->literal = edge_util_sub(lexer->source, begin + 1, lexer->offset - begin);
+    result->literal = edge_util_sub(lexer->source, begin + 1, lexer->offset - begin - 1);
+
+    if(strcmp(result->literal, "i8") == 0) {
+        result->type = _k_i8;
+    }
+    else if(strcmp(result->literal, "i16") == 0) {
+        result->type = _k_i16;
+    }
+    else if(strcmp(result->literal, "int") == 0) {
+        result->type = _k_int;
+    }
+    else if(strcmp(result->literal, "i64") == 0) {
+        result->type = _k_i64;
+    }
+    else if(strcmp(result->literal, "u8") == 0) {
+        result->type = _k_u8;
+    }
+    else if(strcmp(result->literal, "u16") == 0) {
+        result->type = _k_u16;
+    }
+    else if(strcmp(result->literal, "u32") == 0) {
+        result->type = _k_u32;
+    }
+    else if(strcmp(result->literal, "u64") == 0) {
+        result->type = _k_u64;
+    }
+    else if(strcmp(result->literal, "f32") == 0) {
+        result->type = _k_f32;
+    }
+    else if(strcmp(result->literal, "f64") == 0) {
+        result->type = _k_f64;
+    }
+    else if(strcmp(result->literal, "bool") == 0) {
+        result->type = _k_bool;
+    }
+    else if(strcmp(result->literal, "char") == 0) {
+        result->type = _k_char;
+    }
+    else if(strcmp(result->literal, "use") == 0) {
+        result->type = _k_use;
+    }
+    else if(strcmp(result->literal, "var") == 0) {
+        result->type = _k_var;
+    }
+    else if(strcmp(result->literal, "let") == 0) {
+        result->type = _k_let;
+    }
+    else if(strcmp(result->literal, "fun") == 0) {
+        result->type = _k_fun;
+    }
+    else if(strcmp(result->literal, "if") == 0) {
+        result->type = _k_if;
+    }
+    else if(strcmp(result->literal, "else") == 0) {
+        result->type = _k_else;
+    }
+    else if(strcmp(result->literal, "elif") == 0) {
+        result->type = _k_elif;
+    }
 
     return result;
 }
 
-edge_token_t *edge_lexer_tokenize_comment(edge_lexer_t* lexer) {
+edge_token_t *edge_lexer_tokenize_comment(edge_lexer_t *lexer) {
     edge_token_t *result = edge_malloc(sizeof(edge_token_t));
     size_t begin = lexer->offset;
 
@@ -250,7 +340,7 @@ edge_token_t *edge_lexer_tokenize_comment(edge_lexer_t* lexer) {
     return result;
 }
 
-edge_token_t *edge_lexer_go_next(edge_lexer_t* lexer) {
+edge_token_t *edge_lexer_go_next(edge_lexer_t *lexer) {
     edge_token_t *result = edge_malloc(sizeof(edge_token_t));
     size_t begin = lexer->offset;
     char current = edge_lexer_peek_current(lexer);
@@ -259,12 +349,30 @@ edge_token_t *edge_lexer_go_next(edge_lexer_t* lexer) {
         lexer->offset++;
     }
 
+    current = edge_lexer_peek_current(lexer);
+
     switch(current) {
         case '\0': {
             result->type = _eof;
             lexer->offset++;
 
             result->literal = "\0";
+            break;
+        }
+
+        case '\n': {
+            result->type = _bn;
+            lexer->offset++;
+            
+            result->literal = "\n";
+            break;
+        }
+        
+        case '\t': {
+            result->type = _bt;
+            lexer->offset++;
+
+            result->literal = "\t";
             break;
         }
         
@@ -436,6 +544,27 @@ edge_token_t *edge_lexer_go_next(edge_lexer_t* lexer) {
     return result;
 }
 
+void edge_lexer_tokenize(edge_lexer_t *lexer) {
+    edge_token_t *current = edge_malloc(sizeof(edge_token_t));
+    if(lexer->tokens->offset > 0) {
+        return;
+    }
+
+    current = edge_lexer_go_next(lexer);
+    while(1) {
+        edge_list_token_push(lexer->tokens, current);
+        if(current->type != _eof) {
+            current = edge_lexer_go_next(lexer);
+        }
+        else {
+            break;
+        }
+    }
+}
+
 void edge_lexer_destroy(edge_lexer_t *lexer) {
+    lexer->offset = (size_t) 0;
+
+    edge_list_token_destroy(lexer->tokens);
     edge_free(lexer);
 }
