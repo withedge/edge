@@ -12,7 +12,7 @@ edge_t *edge_new() {
 }
 
 void edge_destroy(edge_t *edge) {
-    edge_free(edge->errors);
+    edge_list_error_destroy(edge->errors);
     edge_free(edge);
 }
 

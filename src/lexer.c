@@ -2,8 +2,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include <stdio.h>
-
 #include "edge/memory.h"
 #include "edge/util.h"
 #include "edge/edge.h"
