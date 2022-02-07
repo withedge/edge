@@ -54,6 +54,8 @@ typedef enum {
     _string,
     _identifier,
     _integer,
+    _binary,
+    _hex,
     _float,
 
     _k_i8,
@@ -73,6 +75,7 @@ typedef enum {
     _k_var,
     _k_let,
     _k_fun,
+    _k_return,
     _k_if,
     _k_else,
     _k_elif

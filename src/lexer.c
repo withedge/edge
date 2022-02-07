@@ -6,14 +6,16 @@
 
 #include "edge/memory.h"
 #include "edge/util.h"
+#include "edge/edge.h"
 #include "edge/token.h"
 
 #include "edge/lexer.h"
 
-edge_lexer_t *edge_lexer_new(const char *source) {
+edge_lexer_t *edge_lexer_new(edge_t *edge, const char *source) {
     edge_lexer_t *result = edge_malloc(sizeof(edge_lexer_t));
+    result->edge = edge;
     result->source = source;
-    result->offset = (size_t) 0;
+    result->offset = 0;
 
     result->tokens = edge_list_token_new();
 
@@ -30,6 +32,14 @@ bool edge_lexer_is_number(char _, bool accept) {
 
 bool edge_lexer_is_identifier(char _, bool accept) {
     return (((_ >= 97) && (_ <= 122)) || ((_ >= 65) && (_ <= 90)) || _ == '_' || (accept && (edge_lexer_is_number(_, false))));
+}
+
+bool edge_lexer_is_binary(char _) {
+    return ((_ == '0') || (_ == '1'));
+}
+
+bool edge_lexer_is_hex(char _) {
+    return (((_ >= 97) && (_ <= 102)) || ((_ >= 65) && (_ <= 70)) || (edge_lexer_is_number(_, false)));
 }
 
 char edge_lexer_peek_current(edge_lexer_t *lexer) {
@@ -171,7 +181,7 @@ edge_token_t *edge_lexer_tokenize_string(edge_lexer_t *lexer) {
     result->type = _string;
 
     if(edge_lexer_peek_current(lexer) != '\'' && edge_lexer_peek_current(lexer) != '"') {
-        printf("Invalid string literal\n");
+        edge_list_error_push(lexer->edge->errors, edge_error_new(1, "Invalid string literal"));
     }
     lexer->offset++;
 
@@ -179,7 +189,7 @@ edge_token_t *edge_lexer_tokenize_string(edge_lexer_t *lexer) {
         if(edge_lexer_peek_current(lexer) == '\\') {
             lexer->offset++;
             if(edge_lexer_peek_current(lexer) != '\'' && edge_lexer_peek_current(lexer) != '"' && edge_lexer_peek_current(lexer) != '\\' && edge_lexer_peek_current(lexer) != 'n' && edge_lexer_peek_current(lexer) != 't' && edge_lexer_peek_current(lexer) != 'r' && edge_lexer_peek_current(lexer) != '0') {
-                printf("Invalid escape sequence in string position\n");
+                edge_list_error_push(lexer->edge->errors, edge_error_new(1, "Invalid escape sequence in string position"));
             }
             else {
                 if(edge_lexer_peek_current(lexer) == symbol) {
@@ -200,7 +210,7 @@ edge_token_t *edge_lexer_tokenize_string(edge_lexer_t *lexer) {
     }
 
     if(edge_lexer_peek_current(lexer) != symbol) {
-        printf("Unfinished string literal\n");
+        edge_list_error_push(lexer->edge->errors, edge_error_new(1, "Unfinished string literal"));
     }
     lexer->offset++;
 
@@ -216,14 +226,14 @@ edge_token_t *edge_lexer_tokenize_number(edge_lexer_t *lexer) {
     result->type = _integer;
 
     if(!(edge_lexer_is_number(edge_lexer_peek_current(lexer), false))) {
-        printf("Invalid integer literal\n");
+        edge_list_error_push(lexer->edge->errors, edge_error_new(1, "Invalid integer literal"));
     }
     lexer->offset++;
 
     while(edge_lexer_is_number(edge_lexer_peek_current(lexer), true)) {
         if(edge_lexer_peek_current(lexer) == '.' || edge_lexer_peek_current(lexer) == '_') {
             if(!(edge_lexer_is_number(edge_lexer_peek_next(lexer), false))) {
-                printf("Invalid decimal/float literal\n");
+                edge_list_error_push(lexer->edge->errors, edge_error_new(1, "Invalid decimal/float literal"));
             }
 
             if(edge_lexer_peek_current(lexer) == '.') {
@@ -231,14 +241,14 @@ edge_token_t *edge_lexer_tokenize_number(edge_lexer_t *lexer) {
                     result->type = _float;
                 }
                 else {
-                    printf("Invalid float literal\n");
+                    edge_list_error_push(lexer->edge->errors, edge_error_new(1, "Invalid float literal"));
                 }
             }
         }
         lexer->offset++;
     }
 
-    result->literal = edge_util_sub(lexer->source, begin + 1, lexer->offset - begin);
+    result->literal = edge_util_sub(lexer->source, begin + 1, lexer->offset - begin - 1);
 
     return result;
 }
@@ -250,7 +260,7 @@ edge_token_t *edge_lexer_tokenize_identifier(edge_lexer_t *lexer) {
     result->type = _identifier;
 
     if(!(edge_lexer_is_identifier(edge_lexer_peek_current(lexer), false))) {
-        printf("Invalid identifier literal\n");
+        edge_list_error_push(lexer->edge->errors, edge_error_new(1, "Invalid identifier literal"));
     }
 
     while(edge_lexer_is_identifier(edge_lexer_peek_current(lexer), true)) {
@@ -307,6 +317,9 @@ edge_token_t *edge_lexer_tokenize_identifier(edge_lexer_t *lexer) {
     else if(strcmp(result->literal, "fun") == 0) {
         result->type = _k_fun;
     }
+    else if(strcmp(result->literal, "return") == 0) {
+        result->type = _k_return;
+    }
     else if(strcmp(result->literal, "if") == 0) {
         result->type = _k_if;
     }
@@ -327,7 +340,7 @@ edge_token_t *edge_lexer_tokenize_comment(edge_lexer_t *lexer) {
     result->type = _comment;
 
     if(edge_lexer_peek_current(lexer) != '#') {
-        printf("Invalid comment literal\n");
+        edge_list_error_push(lexer->edge->errors, edge_error_new(1, "Invalid comment literal"));
     }
 
     lexer->offset++;
@@ -551,7 +564,7 @@ void edge_lexer_tokenize(edge_lexer_t *lexer) {
     }
 
     current = edge_lexer_go_next(lexer);
-    while(1) {
+    while(true) {
         edge_list_token_push(lexer->tokens, current);
         if(current->type != _eof) {
             current = edge_lexer_go_next(lexer);
@@ -563,7 +576,7 @@ void edge_lexer_tokenize(edge_lexer_t *lexer) {
 }
 
 void edge_lexer_destroy(edge_lexer_t *lexer) {
-    lexer->offset = (size_t) 0;
+    lexer->offset = 0;
 
     edge_list_token_destroy(lexer->tokens);
     edge_free(lexer);
